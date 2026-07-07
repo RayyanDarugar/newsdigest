@@ -12,7 +12,11 @@ export async function login(formData: FormData) {
   if (!expected || !safeEqual(password, expected)) {
     redirect("/login?error=1");
   }
-  const token = await createSessionToken(process.env.COOKIE_SECRET!);
+  const cookieSecret = process.env.COOKIE_SECRET;
+  if (!cookieSecret) {
+    throw new Error("COOKIE_SECRET must be set");
+  }
+  const token = await createSessionToken(cookieSecret);
   (await cookies()).set("digest_session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

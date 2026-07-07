@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
+  const secret = process.env.COOKIE_SECRET;
   const token = req.cookies.get("digest_session")?.value;
-  const ok = await verifySessionToken(token, process.env.COOKIE_SECRET ?? "");
+  // Never verify against an empty-string secret: if COOKIE_SECRET is
+  // missing, fail closed by treating the request as unauthenticated.
+  const ok = secret ? await verifySessionToken(token, secret) : false;
   if (!ok) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
