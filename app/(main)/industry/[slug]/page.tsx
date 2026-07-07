@@ -63,7 +63,7 @@ export default async function IndustryPage({
       {digest && entries.length > 0 && (
         <section className="mb-8 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-neutral-400">
-            In today&apos;s digest
+            In this digest
           </h2>
           {entries.map((e) => (
             <div key={e.id} className="py-2">

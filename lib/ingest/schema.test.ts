@@ -55,6 +55,12 @@ describe("ingestPayloadSchema", () => {
     expect(ingestPayloadSchema.safeParse(p).success).toBe(false);
   });
 
+  it("rejects a calendar-invalid date", () => {
+    const p = validPayload();
+    p.date = "2026-02-30";
+    expect(ingestPayloadSchema.safeParse(p).success).toBe(false);
+  });
+
   it("rejects an unknown source_type", () => {
     const p = validPayload();
     p.items[0].source_type = "tiktok";

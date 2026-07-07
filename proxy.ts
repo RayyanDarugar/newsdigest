@@ -19,7 +19,8 @@ export async function proxy(req: NextRequest) {
 export const config = {
   matcher: [
     // Everything except: login page, ingest API (bearer-authed), Next static
-    // assets, and public files.
-    "/((?!login|api/ingest|_next/static|_next/image|favicon.ico|robots.txt).*)",
+    // assets, and public files. Segment-anchored (?:/|$) so a future route
+    // like /loginhelp or /api/ingestion can't slip through via prefix match.
+    "/((?!login(?:/|$)|api/ingest(?:/|$)|_next/static|_next/image|favicon.ico|robots\\.txt$).*)",
   ],
 };

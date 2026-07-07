@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidDigestDate } from "@/lib/dates";
 
 export const ingestItemSchema = z.object({
   key: z.string().min(1),
@@ -22,7 +23,10 @@ export const ingestEntrySchema = z.object({
 
 export const ingestPayloadSchema = z
   .object({
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD")
+      .refine(isValidDigestDate, "date must be a real calendar date"),
     entries: z.array(ingestEntrySchema),
     items: z.array(ingestItemSchema),
   })

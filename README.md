@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NewsDigest
 
-## Getting Started
+A personal industry digest. An n8n pipeline scrapes news/reddit/market data
+once a day and POSTs it to `/api/ingest`; the app itself is read-only — it
+just renders whatever the pipeline last wrote to Supabase (a home feed of six
+curated categories, plus a per-industry drill-down of everything scraped).
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Create a Supabase project, then open the SQL editor and run
+   `supabase/schema.sql` to create the tables, the `replace_digest` function,
+   and the seed rows (categories/industries).
+2. `cp .env.example .env.local` and fill in the values:
+   - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — from Project Settings → API
+   - `APP_PASSWORD` — shared password for the login page
+   - `INGEST_TOKEN` — bearer token n8n uses to POST `/api/ingest` (`openssl rand -hex 32`)
+   - `COOKIE_SECRET` — signs the session cookie (`openssl rand -hex 32`)
+   - `APP_URL` — defaults to `http://localhost:3000`, used by `scripts/seed.ts`
+3. `npm install`
+4. `npm run dev`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Seeding
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`npm run seed` posts `docs/sample-payload.json` through the real ingest
+endpoint so there's something to look at locally. Pass `-- --today` to seed
+under today's date instead of the sample payload's own date.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Testing
 
-## Learn More
+`npm test` runs the Vitest suite (schema validation, transform logic, etc.).
 
-To learn more about Next.js, take a look at the following resources:
+## Further reading
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `docs/ingest-contract.md` — the payload shape n8n must send, validation
+  rules, and response codes.
+- `docs/superpowers/specs/` and `docs/superpowers/plans/` — the original
+  design spec and implementation plan this app was built from.

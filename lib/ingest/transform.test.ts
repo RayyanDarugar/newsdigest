@@ -39,6 +39,22 @@ describe("transformPayload", () => {
     ]);
   });
 
+  it("dedupes duplicate source_refs within an entry", () => {
+    const payload: IngestPayload = {
+      date: "2026-07-07",
+      entries: [
+        { category: "big_event", industry: "energy", title: "Entry A", body: "b", position: 0, source_refs: ["k1", "k1"] },
+      ],
+      items: [
+        { key: "k1", industry: "energy", source_type: "reddit", title: "Item 1", metadata: { score: 5 }, position: 0 },
+      ],
+    };
+    const t = transformPayload(payload);
+    const entryA = t.entries.find((e) => e.title === "Entry A")!;
+    const item1 = t.items.find((i) => i.title === "Item 1")!;
+    expect(t.entrySources).toEqual([{ entry_id: entryA.id, source_item_id: item1.id }]);
+  });
+
   it("normalizes optional fields to null / empty object", () => {
     const t = transformPayload(PAYLOAD);
     const item1 = t.items.find((i) => i.title === "Item 1")!;

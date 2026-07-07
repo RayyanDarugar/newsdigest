@@ -114,6 +114,10 @@ begin
 end;
 $$;
 
+-- The ingest API calls this via the service-role key; anon/authenticated
+-- clients should never be able to invoke it directly.
+revoke execute on function replace_digest(jsonb, jsonb, jsonb, jsonb) from anon, authenticated;
+
 -- Seeds
 insert into categories (slug, name, sort_order) values
   ('big_event', 'Biggest Event of the Day', 0),

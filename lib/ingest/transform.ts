@@ -59,8 +59,10 @@ export function transformPayload(payload: IngestPayload): TransformResult {
       body: entry.body,
       position: entry.position,
     });
-    for (const ref of entry.source_refs) {
+    for (const ref of new Set(entry.source_refs)) {
       // Schema guarantees every ref resolves (superRefine in Task 4).
+      // Dedupe: duplicate refs within an entry would otherwise violate the
+      // entry_sources composite primary key.
       entrySources.push({ entry_id: id, source_item_id: keyToId.get(ref)! });
     }
   }

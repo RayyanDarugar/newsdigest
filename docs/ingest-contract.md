@@ -34,7 +34,7 @@ One JSON document per day. Canonical example: `docs/sample-payload.json`.
 | `industry` | string \| null | no | industry slug; null/omit for world news & market items |
 | `source_type` | `"reddit"` \| `"news"` \| `"market"` | yes | |
 | `title` | string | yes | |
-| `url` | string \| null | no | link to the original post/article |
+| `url` | string \| null | no | link to the original post/article; must be an absolute URL (e.g. https://…) when present |
 | `summary` | string \| null | no | |
 | `metadata` | object | no | anything useful: `subreddit`, `score`, `comments`, `source`, `ticker`, `change_pct`… |
 | `position` | int ≥ 0 | yes | rank within its group as scraped |
@@ -63,6 +63,8 @@ Current category slugs: `big_event` (single spotlight entry), `world_news`,
   table editor, then re-run.
 - **Dangling refs are rejected:** every `source_refs` value must match an
   `items[].key` in the same payload.
+- **Duplicate `source_refs` within an entry are allowed and deduplicated:**
+  `["k1","k1"]` is stored as a single `entry_sources` row.
 
 ## Responses
 
