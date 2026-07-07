@@ -1,0 +1,171 @@
+{
+  "date": "2026-07-07",
+  "entries": [
+    {
+      "category": "big_event",
+      "industry": "energy",
+      "title": "DOE's $2.1B long-duration storage program is the day's biggest opportunity",
+      "body": "The DOE announced $2.1B in funding for long-duration storage pilots, and the energy communities were already buzzing about Texas quietly crossing 12GW of battery storage. Grid-scale storage is moving from thesis to procurement — worth watching who wins the pilot slots.",
+      "position": 0,
+      "source_refs": ["n-energy-1", "r-energy-2"]
+    },
+    {
+      "category": "world_news",
+      "industry": null,
+      "title": "EU passes landmark grid-interconnect funding package",
+      "body": "Brussels approved a multi-year funding package for cross-border grid interconnects, a tailwind for European energy infrastructure suppliers.",
+      "position": 0,
+      "source_refs": ["n-world-1"]
+    },
+    {
+      "category": "world_news",
+      "industry": null,
+      "title": "Panama Canal restrictions ease",
+      "body": "Rainy season has replenished the locks; daily transit slots are returning to normal, relieving a persistent drag on trans-Pacific shipping schedules.",
+      "position": 1,
+      "source_refs": ["n-world-2"]
+    },
+    {
+      "category": "community_sentiment",
+      "industry": "energy",
+      "title": "Energy communities: bullish on storage, anxious about summer load",
+      "body": "r/energy is split between excitement over the storage buildout and worry about record summer demand forecasts. The storage optimism is the louder signal this week.",
+      "position": 0,
+      "source_refs": ["r-energy-1", "r-energy-2"]
+    },
+    {
+      "category": "community_sentiment",
+      "industry": "logistics",
+      "title": "Freight sentiment cautiously turning",
+      "body": "Brokers are reporting the first spot-rate upticks in eight months, and the tone in freight communities has shifted from capitulation to cautious optimism.",
+      "position": 1,
+      "source_refs": ["r-logistics-1", "r-logistics-2"]
+    },
+    {
+      "category": "industry_events",
+      "industry": "real-estate",
+      "title": "Office-to-residential conversions starting to pencil out",
+      "body": "CRE practitioners are posting real underwriting showing conversions working in second-tier CBDs for the first time this cycle, driven by distressed office basis.",
+      "position": 0,
+      "source_refs": ["r-realestate-1"]
+    },
+    {
+      "category": "finance",
+      "industry": null,
+      "title": "Oil up, industrial REITs rally",
+      "body": "WTI rose 2.3% to $81.40 on demand revisions, and Prologis jumped 4.1% after an earnings beat — a constructive read-through for both energy and logistics real estate.",
+      "position": 0,
+      "source_refs": ["m-1", "m-2"]
+    },
+    {
+      "category": "opportunities",
+      "industry": "logistics",
+      "title": "Spot-rate inflection could reward early brokerage relationships",
+      "body": "If the spot-rate turn holds, capacity tightens from here; relationships with small fleet owners formed during the downturn get valuable fast. The PLD earnings beat supports the demand-recovery read.",
+      "position": 0,
+      "source_refs": ["r-logistics-1", "m-2"]
+    }
+  ],
+  "items": [
+    {
+      "key": "r-energy-1",
+      "industry": "energy",
+      "source_type": "reddit",
+      "title": "Grid operators bracing for record summer demand",
+      "url": "https://www.reddit.com/r/energy/comments/sample1",
+      "summary": "ERCOT and PJM demand forecasts both point at records; thread debates whether storage additions arrive fast enough.",
+      "metadata": { "subreddit": "energy", "score": 412, "comments": 87 },
+      "position": 0
+    },
+    {
+      "key": "r-energy-2",
+      "industry": "energy",
+      "source_type": "reddit",
+      "title": "Texas battery storage quietly hit 12GW",
+      "url": "https://www.reddit.com/r/energy/comments/sample2",
+      "summary": "Milestone post with interconnection-queue data; commenters note merchant storage economics improving.",
+      "metadata": { "subreddit": "energy", "score": 288, "comments": 54 },
+      "position": 1
+    },
+    {
+      "key": "n-energy-1",
+      "industry": "energy",
+      "source_type": "news",
+      "title": "DOE announces $2.1B for long-duration storage pilots",
+      "url": "https://example.com/doe-storage-pilots",
+      "summary": "Funding targets 10+ hour duration technologies; applications open in Q4.",
+      "metadata": { "source": "Utility Dive" },
+      "position": 2
+    },
+    {
+      "key": "r-logistics-1",
+      "industry": "logistics",
+      "source_type": "reddit",
+      "title": "Freight brokers seeing spot rates tick up for the first time in 8 months",
+      "url": "https://www.reddit.com/r/FreightBrokers/comments/sample3",
+      "summary": "Multiple brokers report reefer and dry van spot rates up week-over-week.",
+      "metadata": { "subreddit": "FreightBrokers", "score": 156, "comments": 61 },
+      "position": 0
+    },
+    {
+      "key": "r-logistics-2",
+      "industry": "logistics",
+      "source_type": "reddit",
+      "title": "USPS regional consolidation megathread",
+      "url": "https://www.reddit.com/r/logistics/comments/sample4",
+      "summary": "Discussion of USPS network changes and their effect on last-mile contractors.",
+      "metadata": { "subreddit": "logistics", "score": 94, "comments": 40 },
+      "position": 1
+    },
+    {
+      "key": "r-realestate-1",
+      "industry": "real-estate",
+      "source_type": "reddit",
+      "title": "Are commercial-to-residential conversions actually penciling out now?",
+      "url": "https://www.reddit.com/r/CommercialRealEstate/comments/sample5",
+      "summary": "OP shares underwriting on a conversion at 40% of replacement cost; long thread of practitioners comparing markets.",
+      "metadata": { "subreddit": "CommercialRealEstate", "score": 203, "comments": 118 },
+      "position": 0
+    },
+    {
+      "key": "n-world-1",
+      "industry": null,
+      "source_type": "news",
+      "title": "EU passes landmark grid-interconnect funding package",
+      "url": "https://example.com/eu-grid-funding",
+      "summary": "Multi-year package funds cross-border transmission projects.",
+      "metadata": { "source": "Reuters" },
+      "position": 0
+    },
+    {
+      "key": "n-world-2",
+      "industry": null,
+      "source_type": "news",
+      "title": "Panama Canal restrictions ease as rainy season replenishes locks",
+      "url": "https://example.com/panama-canal-easing",
+      "summary": "Daily transit slots returning to pre-drought levels.",
+      "metadata": { "source": "AP" },
+      "position": 1
+    },
+    {
+      "key": "m-1",
+      "industry": null,
+      "source_type": "market",
+      "title": "WTI crude +2.3% to $81.40",
+      "url": null,
+      "summary": "Demand revisions from the IEA monthly report.",
+      "metadata": { "ticker": "CL=F", "change_pct": 2.3 },
+      "position": 0
+    },
+    {
+      "key": "m-2",
+      "industry": null,
+      "source_type": "market",
+      "title": "Prologis (PLD) +4.1% after earnings beat",
+      "url": null,
+      "summary": "Raised full-year guidance on logistics demand.",
+      "metadata": { "ticker": "PLD", "change_pct": 4.1 },
+      "position": 1
+    }
+  ]
+}
