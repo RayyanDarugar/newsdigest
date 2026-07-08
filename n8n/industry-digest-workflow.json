@@ -1,0 +1,641 @@
+{
+  "name": "Industry Digest — Daily Pipeline",
+  "nodes": [
+    {
+      "id": "1e3ee8eb-2b49-4c40-88f2-4c749187dd7c",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -680,
+        460
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "042f27f3-8071-4662-aea1-3b36862212f9",
+      "name": "Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        460
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const industries = [\n  { slug: 'sports-management', name: 'Sports Management', subreddits: ['SportsBusiness'] },\n  { slug: 'media', name: 'Media', subreddits: ['mediaindustry'] },\n  { slug: 'manufacturing', name: 'Manufacturing', subreddits: ['manufacturing'] },\n  { slug: 'consulting', name: 'Consulting', subreddits: ['consulting'] },\n  { slug: 'contracting', name: 'Contracting', subreddits: ['Construction'] },\n  { slug: 'brick-and-mortar', name: 'Brick & Mortar', subreddits: ['retail'] },\n  { slug: 'energy', name: 'Energy', subreddits: ['energy'] },\n  { slug: 'logistics', name: 'Logistics', subreddits: ['logistics'] },\n  { slug: 'real-estate', name: 'Real Estate', subreddits: ['CommercialRealEstate', 'realestateinvesting'] },\n  { slug: 'agriculture', name: 'Agriculture', subreddits: ['agriculture'] },\n];\n\n// No API key needed — BBC's public RSS feeds.\nconst newsFeeds = [\n  { url: 'http://feeds.bbci.co.uk/news/world/rss.xml', label: 'BBC World' },\n  { url: 'http://feeds.bbci.co.uk/news/business/rss.xml', label: 'BBC Business' },\n];\n\n// No API key needed — Yahoo Finance's public chart endpoint.\nconst marketTickers = [\n  { symbol: 'SPY', label: 'S&P 500 (SPY)' },\n  { symbol: 'XLE', label: 'Energy sector (XLE)' },\n  { symbol: 'XLRE', label: 'Real estate sector (XLRE)' },\n  { symbol: 'IYT', label: 'Transports (IYT)' },\n];\n\n// Swap for your production Vercel URL once deployed. This is the only place\n// it needs to be set — everything downstream reads it from here.\nconst appUrl = 'http://localhost:3000';\n\nconst targetDate = new Date().toISOString().slice(0, 10);\n\nreturn [{\n  json: { industries, newsFeeds, marketTickers, appUrl, targetDate },\n}];"
+      }
+    },
+    {
+      "id": "7359af67-b581-49db-984b-0671dcc69495",
+      "name": "Build Reddit Start URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { industries } = $('Config').first().json;\n\nconst startUrls = [];\nconst subredditToIndustry = {};\n\nfor (const ind of industries) {\n  for (const sub of ind.subreddits) {\n    // t=day matches this workflow's daily cadence; switch to t=week for a\n    // low-traffic subreddit that doesn't get enough posts in 24h.\n    startUrls.push({ url: `https://www.reddit.com/r/${sub}/top/?t=day` });\n    subredditToIndustry[sub.toLowerCase()] = ind.slug;\n  }\n}\n\nreturn [{ json: { startUrls, subredditToIndustry } }];"
+      }
+    },
+    {
+      "id": "f861bf54-1703-4c82-b1d1-f3cb7cebe308",
+      "name": "Start Reddit Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/trudax~reddit-scraper-lite/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { startUrls: $json.startUrls, maxItems: 100, skipComments: true, postsPerPage: 50 } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "",
+          "name": "Apify API Token"
+        }
+      }
+    },
+    {
+      "id": "9a1ec4e9-f590-4462-bfe5-f38c7c0f0ac6",
+      "name": "Wait for Apify Run",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        180
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 3,
+        "unit": "minutes"
+      },
+      "webhookId": "6f8e01cf-6286-4ef7-9ebb-0549f8e43bbf"
+    },
+    {
+      "id": "9bc4446a-e88e-4f42-858d-c5d4dbd92b16",
+      "name": "Fetch Reddit Dataset",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        180
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.apify.com/v2/acts/trudax~reddit-scraper-lite/runs/last/dataset/items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "150"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "",
+          "name": "Apify API Token"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "4b378ea7-f60c-4aa8-b550-c94ff2192099",
+      "name": "Shape Reddit Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { subredditToIndustry } = $('Build Reddit Start URLs').first().json;\nconst posts = $input.all().map((i) => i.json);\nconst items = [];\nlet position = 0;\n\nfunction communitySlug(raw) {\n  if (!raw) return null;\n  return String(raw).replace(/^\\/?r\\//i, '').trim().toLowerCase();\n}\n\nfor (const post of posts) {\n  try {\n    // trudax/reddit-scraper-lite's exact field names can shift between actor\n    // versions — check a live run's dataset in the Apify console (or the\n    // Fetch Reddit Dataset node's output here) and adjust these fallbacks if\n    // items come through with missing titles/industries.\n    if (post.dataType && post.dataType !== 'post') continue;\n    if (!post.title) continue;\n\n    const slug = communitySlug(post.communityName || post.community || post.subreddit);\n    const industry = slug ? subredditToIndustry[slug] : null;\n    if (!industry) continue; // Couldn't map this back to a tracked industry — skip it.\n\n    const url = post.permalink ? `https://www.reddit.com${post.permalink}` : post.url || null;\n\n    items.push({\n      json: {\n        key: `reddit-${industry}-${post.id || position}`,\n        industry,\n        source_type: 'reddit',\n        title: post.title,\n        url,\n        summary: post.body ? String(post.body).slice(0, 400) : null,\n        metadata: {\n          subreddit: slug,\n          score: post.upVotes ?? post.score ?? null,\n          comments: post.numberOfComments ?? post.commentsCount ?? null,\n        },\n        position: position++,\n      },\n    });\n  } catch (e) {\n    continue;\n  }\n}\n\nreturn items;"
+      }
+    },
+    {
+      "id": "ed99f851-40b7-4036-a842-407526993618",
+      "name": "Build News Requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        460
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { newsFeeds } = $('Config').first().json;\nreturn newsFeeds.map((f) => ({ json: { url: f.url, label: f.label } }));"
+      }
+    },
+    {
+      "id": "f4418fad-bb71-45bd-af3d-f3162afbb66f",
+      "name": "Fetch News Feeds",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        460
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "7f3f9ddf-74db-4a20-a7d5-fb4675a9ba5f",
+      "name": "Shape News Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        460
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const requests = $('Build News Requests').all();\nconst responses = $input.all();\nconst items = [];\nconst MAX_PER_FEED = 5;\n\nfunction extractTag(block, tag) {\n  const m = block.match(new RegExp(`<${tag}[^>]*>([\\\\s\\\\S]*?)<\\\\/${tag}>`, 'i'));\n  if (!m) return '';\n  let val = m[1];\n  const cdata = val.match(/^<!\\[CDATA\\[([\\s\\S]*)\\]\\]>$/);\n  if (cdata) val = cdata[1];\n  return val\n    .trim()\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\");\n}\n\nfor (let i = 0; i < Math.min(requests.length, responses.length); i++) {\n  try {\n    const label = requests[i].json.label;\n    const xml = responses[i].json.data || '';\n    const blocks = xml.match(/<item>([\\s\\S]*?)<\\/item>/gi) || [];\n\n    let position = 0;\n    for (const block of blocks.slice(0, MAX_PER_FEED)) {\n      const title = extractTag(block, 'title');\n      const link = extractTag(block, 'link');\n      const description = extractTag(block, 'description');\n      if (!title || !link) continue;\n\n      items.push({\n        json: {\n          key: `news-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${position}`,\n          industry: null,\n          source_type: 'news',\n          title,\n          url: link,\n          summary: description ? description.replace(/<[^>]+>/g, '').slice(0, 400) : null,\n          metadata: { source: label },\n          position: position++,\n        },\n      });\n    }\n  } catch (e) {\n    continue; // Skip a feed that returned something unexpected.\n  }\n}\n\nreturn items;"
+      }
+    },
+    {
+      "id": "bcc9a6e3-2d1e-4401-a04b-1538f275d08a",
+      "name": "Build Market Requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        740
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { marketTickers } = $('Config').first().json;\nreturn marketTickers.map((t) => ({\n  json: {\n    symbol: t.symbol,\n    label: t.label,\n    requestUrl: `https://query1.finance.yahoo.com/v8/finance/chart/${t.symbol}?interval=1d&range=5d`,\n  },\n}));"
+      }
+    },
+    {
+      "id": "4f8992f0-7f25-4d0f-bfda-cad6f34cc974",
+      "name": "Fetch Market Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        740
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.requestUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "IndustryDigestBot/1.0 (personal use)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "ccf393cb-23f3-4d01-9ba6-2dfa0f3ca014",
+      "name": "Shape Market Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        740
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const requests = $('Build Market Requests').all();\nconst responses = $input.all();\nconst items = [];\n\nfor (let i = 0; i < Math.min(requests.length, responses.length); i++) {\n  try {\n    const req = requests[i].json;\n    const meta = responses[i].json.chart.result[0].meta;\n    const price = meta.regularMarketPrice;\n    const prevClose = meta.previousClose ?? meta.chartPreviousClose;\n    const changePct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;\n    const sign = changePct >= 0 ? '+' : '';\n\n    items.push({\n      json: {\n        key: `market-${req.symbol}`,\n        industry: null,\n        source_type: 'market',\n        title: `${req.label} ${sign}${changePct.toFixed(2)}%`,\n        url: null,\n        summary: null,\n        metadata: { ticker: req.symbol, change_pct: Math.round(changePct * 100) / 100, price },\n        position: i,\n      },\n    });\n  } catch (e) {\n    continue; // Skip a ticker that failed to fetch/parse.\n  }\n}\n\nreturn items;"
+      }
+    },
+    {
+      "id": "37ebac2e-2d9c-44a3-abe1-01faed3a0faa",
+      "name": "Merge Items",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        900,
+        460
+      ],
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 3
+      }
+    },
+    {
+      "id": "3223d5bf-671c-4fe7-b0da-aa9a782dedea",
+      "name": "Assemble Items & Cap",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        460
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const all = $input.all().map((i) => i.json);\n\n// Cap volume per (industry, source_type) group so the digest stays scannable;\n// tune these if you want more/less raw material feeding the drill-down pages.\nconst REDDIT_PER_INDUSTRY = 4;\nconst NEWS_TOTAL = 10;\n\nconst reddit = all.filter((x) => x.source_type === 'reddit');\nconst news = all.filter((x) => x.source_type === 'news');\nconst market = all.filter((x) => x.source_type === 'market');\n\nconst cappedReddit = [];\nconst seenPerIndustry = {};\nfor (const item of reddit) {\n  seenPerIndustry[item.industry] = seenPerIndustry[item.industry] || 0;\n  if (seenPerIndustry[item.industry] < REDDIT_PER_INDUSTRY) {\n    cappedReddit.push(item);\n    seenPerIndustry[item.industry]++;\n  }\n}\n\nconst cappedNews = news.slice(0, NEWS_TOTAL);\n\n// Recompute contiguous, zero-based positions within each (industry, source_type)\n// group, since capping/merging can leave gaps.\nfunction renumber(list) {\n  const counters = {};\n  return list.map((item) => {\n    const key = `${item.industry}::${item.source_type}`;\n    counters[key] = counters[key] ?? 0;\n    return { ...item, position: counters[key]++ };\n  });\n}\n\nconst items = renumber([...cappedReddit, ...cappedNews, ...market]);\nconst { targetDate } = $('Config').first().json;\n\nreturn [{ json: { items, targetDate } }];"
+      }
+    },
+    {
+      "id": "3d56027c-7312-401d-8ef5-7703fd0d0350",
+      "name": "Build Synthesis Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        460
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { items, targetDate } = $input.first().json;\n\nconst CATEGORY_SLUGS = ['big_event', 'world_news', 'community_sentiment', 'industry_events', 'finance', 'opportunities'];\nconst INDUSTRY_SLUGS = $('Config').first().json.industries.map((i) => i.slug);\n\nconst itemsForPrompt = items.map((it) => ({\n  key: it.key,\n  industry: it.industry,\n  source_type: it.source_type,\n  title: it.title,\n  summary: it.summary,\n  metadata: it.metadata,\n}));\n\nconst systemPrompt = `You are the daily synthesis step of a personal industry-intelligence digest.\nYou will be given a JSON array of raw items scraped today (reddit posts, news articles, market data),\neach with a unique \"key\". Produce the curated \"entries\" array for the home feed.\n\nOutput rules (strict):\n- Respond with ONLY a JSON array. No markdown fences, no prose, no explanation before or after.\n- Each element: { \"category\": string, \"industry\": string|null, \"title\": string, \"body\": string, \"position\": integer, \"source_refs\": string[] }.\n- \"category\" MUST be one of exactly: ${CATEGORY_SLUGS.join(', ')}.\n- \"industry\", when set, MUST be one of exactly: ${INDUSTRY_SLUGS.join(', ')}. Use null for items with no single industry (world news, broad market moves).\n- \"source_refs\" MUST only contain \"key\" values from the provided items array. Never invent a key.\n- \"position\" is zero-based order within its category section.\n\nCategory guidance:\n- big_event: exactly ONE entry, the single most important story or opportunity across everything today.\n- world_news: 1-3 entries, industry null, macro/global stories.\n- community_sentiment: one entry per industry that had meaningful reddit discussion, synthesizing the overall mood/theme rather than restating one post; source_refs should usually cite multiple reddit items.\n- industry_events: notable per-industry news (funding, deals, regulation, launches).\n- finance: market-moving items; industry can be null or set if a move is industry-specific.\n- opportunities: angles worth paying attention to — where the day's items suggest a business opening, an investment worth watching, or an industry/role gaining momentum. Ground every claim in the given items; do not speculate beyond them.\n\nKeep each \"body\" to 2-4 sentences. Do not fabricate items or sources beyond what's provided.`;\n\nconst userPrompt = `Today's date: ${targetDate}\n\nRaw items:\n${JSON.stringify(itemsForPrompt, null, 2)}\n\nProduce the entries array now.`;\n\nreturn [{ json: { items, targetDate, systemPrompt, userPrompt } }];"
+      }
+    },
+    {
+      "id": "e123e326-1ff5-4ac3-bd82-4ca5ed14dfe6",
+      "name": "Call Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        460
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: \"claude-sonnet-5\", max_tokens: 4096, system: $json.systemPrompt, messages: [ { role: \"user\", content: $json.userPrompt } ] } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Anthropic API Key"
+        }
+      }
+    },
+    {
+      "id": "95780163-b1aa-46ec-ba5c-489542f97e29",
+      "name": "Assemble Final Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        460
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const claudeResponse = $input.first().json;\nconst { items, targetDate } = $('Assemble Items & Cap').first().json;\n\nlet text = '';\nif (Array.isArray(claudeResponse.content) && claudeResponse.content[0]?.text) {\n  text = claudeResponse.content[0].text;\n} else {\n  throw new Error(`Unexpected Claude response shape: ${JSON.stringify(claudeResponse).slice(0, 500)}`);\n}\n\n// Defensive: strip accidental markdown fences if the model adds them despite instructions.\nconst start = text.indexOf('[');\nconst end = text.lastIndexOf(']');\nif (start === -1 || end === -1) {\n  throw new Error(`Could not find a JSON array in Claude's response: ${text.slice(0, 500)}`);\n}\nconst jsonSlice = text.slice(start, end + 1);\n\nlet entries;\ntry {\n  entries = JSON.parse(jsonSlice);\n} catch (e) {\n  throw new Error(`Failed to parse Claude's entries JSON: ${e.message}\\n${jsonSlice.slice(0, 500)}`);\n}\n\n// Safety net: drop any source_refs the model invented that don't match a real item key.\n// The ingest endpoint would reject the WHOLE payload for a dangling ref; better to\n// clean it here than lose a whole day's digest over one bad reference.\nconst validKeys = new Set(items.map((i) => i.key));\nfor (const entry of entries) {\n  entry.source_refs = (entry.source_refs || []).filter((k) => validKeys.has(k));\n}\n\nconst payload = { date: targetDate, entries, items };\nreturn [{ json: payload }];"
+      }
+    },
+    {
+      "id": "56407e5e-7106-4f5a-8ffb-bf1ad22cce5f",
+      "name": "POST to Ingest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        460
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.appUrl }}/api/ingest",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Ingest Token"
+        }
+      }
+    },
+    {
+      "id": "ebaac5e1-4113-4ffa-a68d-060a3bf2b835",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -220
+      ],
+      "parameters": {
+        "content": "## Industry Digest — Daily Pipeline\n\nRuns every morning: scrapes reddit (via your Apify actor), news (BBC RSS),\nand market data (Yahoo Finance), has Claude synthesize it into the\nsix-category digest, and POSTs it to the app's `/api/ingest` endpoint. See\n`docs/ingest-contract.md` in the app repo for the exact contract this\nworkflow builds against.\n\n**Before activating:**\n1. Set `appUrl` in the **Config** node to your deployed app URL.\n2. Create the three credentials described in the \"Credentials Setup\" note.\n3. Tune subreddits / news feeds / tickers in **Config** — see \"Tuning\n   Sources\".\n4. Check the \"Reddit via Apify\" note re: the wait-time step.\n5. Do a manual test run (the ▶ button) before turning on the schedule.",
+        "width": 1100,
+        "height": 220
+      }
+    },
+    {
+      "id": "7f3009e2-327b-4220-9504-0470cbf9d509",
+      "name": "Reddit via Apify",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        -220
+      ],
+      "parameters": {
+        "content": "## Reddit via Apify\n\nUses your existing `trudax/reddit-scraper-lite` actor: start one run with\nevery tracked subreddit as a startUrl, wait, then fetch that run's dataset.\n\nThe 3-minute wait is a starting guess — check the Runs tab in the Apify\nconsole to see how long a run with your actual subreddit count takes, and\nadjust \"Wait for Apify Run\" if items are coming back empty (run finished\nlate) or you want it faster (run finished early). For something more robust\nlater, an Apify webhook that resumes this workflow when the run completes\nwould replace the fixed wait.\n\nReddit Scraper Lite's exact output field names can shift between actor\nversions — if \"Shape Reddit Items\" isn't picking up posts, open its input\n(the raw dataset) and check the field names against the comment at the top\nof that node's code.",
+        "width": 900,
+        "height": 220
+      }
+    },
+    {
+      "id": "43a922b7-8b3b-49c9-9114-55cf705799e3",
+      "name": "Tuning Sources",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        980
+      ],
+      "parameters": {
+        "content": "## Tuning sources\n\nEverything scraped is defined in the **Config** node at the start of the\nworkflow — subreddits per industry, news RSS feeds, and market tickers.\nEdit that one node to change what gets pulled; nothing else needs to\nchange. The industry list here must match the `industries` table in\nSupabase exactly (same slugs) or the ingest call will be rejected — add a\nslug to Supabase first if you add a new industry here.",
+        "width": 700,
+        "height": 220
+      }
+    },
+    {
+      "id": "7109af33-5f13-4a0c-86a9-bb30c854a45f",
+      "name": "Credentials Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        460,
+        980
+      ],
+      "parameters": {
+        "content": "## Credentials setup (one-time, in n8n)\n\nThis workflow needs three credentials (Credentials → New):\n\n1. **Anthropic API Key** (Header Auth) — used by \"Call Claude\".\n   Header name: `x-api-key`\n   Header value: your Anthropic API key\n\n2. **Ingest Token** (Header Auth) — used by \"POST to Ingest\".\n   Header name: `Authorization`\n   Header value: `Bearer <your INGEST_TOKEN from .env.local>`\n\n3. **Apify API Token** (Query Auth) — used by \"Start Reddit Scrape\" and\n   \"Fetch Reddit Dataset\".\n   Parameter name: `token`\n   Parameter value: your Apify API token (Apify console → Settings → API & Integrations)\n\nAfter creating them, open each of the four HTTP nodes above and select the\nmatching credential — imported workflows don't link credentials\nautomatically, and none of these values are stored in this file.",
+        "width": 800,
+        "height": 280
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Build Reddit Start URLs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build News Requests",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Market Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Reddit Start URLs": {
+      "main": [
+        [
+          {
+            "node": "Start Reddit Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Reddit Scrape": {
+      "main": [
+        [
+          {
+            "node": "Wait for Apify Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Apify Run": {
+      "main": [
+        [
+          {
+            "node": "Fetch Reddit Dataset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Reddit Dataset": {
+      "main": [
+        [
+          {
+            "node": "Shape Reddit Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Reddit Items": {
+      "main": [
+        [
+          {
+            "node": "Merge Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build News Requests": {
+      "main": [
+        [
+          {
+            "node": "Fetch News Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch News Feeds": {
+      "main": [
+        [
+          {
+            "node": "Shape News Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape News Items": {
+      "main": [
+        [
+          {
+            "node": "Merge Items",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Build Market Requests": {
+      "main": [
+        [
+          {
+            "node": "Fetch Market Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Market Data": {
+      "main": [
+        [
+          {
+            "node": "Shape Market Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Market Items": {
+      "main": [
+        [
+          {
+            "node": "Merge Items",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge Items": {
+      "main": [
+        [
+          {
+            "node": "Assemble Items & Cap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Items & Cap": {
+      "main": [
+        [
+          {
+            "node": "Build Synthesis Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Synthesis Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude": {
+      "main": [
+        [
+          {
+            "node": "Assemble Final Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Final Payload": {
+      "main": [
+        [
+          {
+            "node": "POST to Ingest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
