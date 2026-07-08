@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SourceItemCard } from "@/components/source-item-card";
+import { Icon, type IconName } from "@/components/icons";
+import { getIndustryColor } from "@/lib/industry-colors";
 import {
   getDigestByDate,
   getDigestDates,
@@ -13,10 +15,10 @@ import { isValidDigestDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
-const GROUPS: Array<{ type: SourceItem["source_type"]; label: string }> = [
-  { type: "reddit", label: "Reddit" },
-  { type: "news", label: "News" },
-  { type: "market", label: "Market" },
+const GROUPS: Array<{ type: SourceItem["source_type"]; label: string; icon: IconName }> = [
+  { type: "reddit", label: "Reddit", icon: "chat" },
+  { type: "news", label: "News", icon: "doc" },
+  { type: "market", label: "Market", icon: "bars" },
 ];
 
 export default async function IndustryPage({
@@ -45,42 +47,52 @@ export default async function IndustryPage({
 
   return (
     <main>
-      <div className="mb-6 flex items-baseline justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">{industry.name}</h1>
+      <div className="mb-2 flex items-center gap-3">
+        <span
+          className="h-4 w-4 flex-none rounded-sm"
+          style={{ background: getIndustryColor(industry.slug) }}
+        />
+        <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight">
+          {industry.name}
+        </h1>
+      </div>
+      <div className="mb-8 flex items-center justify-between gap-4 font-mono text-xs uppercase tracking-wide text-text-muted">
+        <span>{date ?? "—"}</span>
         {date && (
-          <Link href={`/d/${date}`} className="text-sm text-neutral-500 underline">
-            digest for {date}
+          <Link href={`/d/${date}`} className="text-accent underline underline-offset-2 hover:no-underline">
+            View full digest
           </Link>
         )}
       </div>
 
       {!digest && (
-        <p className="text-neutral-500">
+        <p className="text-text-muted">
           {date ? `No digest for ${date}.` : "No digests yet."}
         </p>
       )}
 
       {digest && entries.length > 0 && (
-        <section className="mb-8 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-neutral-400">
+        <section className="mb-10 rounded border border-border bg-surface p-5">
+          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-text-muted">
             In this digest
           </h2>
           {entries.map((e) => (
             <div key={e.id} className="py-2">
-              <h3 className="font-medium">{e.title}</h3>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{e.body}</p>
+              <h3 className="font-body font-semibold">{e.title}</h3>
+              <p className="mt-1 text-sm text-text-muted">{e.body}</p>
             </div>
           ))}
         </section>
       )}
 
       {digest &&
-        GROUPS.map(({ type, label }) => {
+        GROUPS.map(({ type, label, icon }) => {
           const group = items.filter((i) => i.source_type === type);
           if (group.length === 0) return null;
           return (
-            <section key={type} className="mb-8">
-              <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-neutral-400">
+            <section key={type} className="mb-10">
+              <h2 className="mb-1 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.15em] text-text-muted">
+                <Icon name={icon} className="flex-none text-accent" />
                 {label}
               </h2>
               {group.map((item) => (
@@ -91,7 +103,7 @@ export default async function IndustryPage({
         })}
 
       {digest && items.length === 0 && (
-        <p className="text-neutral-500">
+        <p className="text-text-muted">
           Nothing was pulled for {industry.name} on {date}.
         </p>
       )}

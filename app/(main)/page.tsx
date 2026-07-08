@@ -8,7 +8,7 @@ export default async function HomePage() {
   if (dates.length === 0) {
     return (
       <main>
-        <p className="text-neutral-500">
+        <p className="text-text-muted">
           No digests yet. Once the daily pipeline runs, they&apos;ll land here.
         </p>
       </main>

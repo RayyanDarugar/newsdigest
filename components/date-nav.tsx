@@ -9,24 +9,24 @@ export function DateNav({ date, dates }: { date: string; dates: string[] }) {
   const latest = dates[0];
 
   return (
-    <div className="mb-8 flex items-center gap-3 text-sm">
+    <div className="mb-8 flex items-center gap-3 font-mono text-xs uppercase tracking-wide">
       {older ? (
-        <Link href={`/d/${older}`} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
+        <Link href={`/d/${older}`} className="text-text-muted transition-colors hover:text-accent">
           ← {older}
         </Link>
       ) : (
-        <span className="text-neutral-300 dark:text-neutral-700">← older</span>
+        <span className="text-border">← older</span>
       )}
       <DatePicker current={date} />
       {newer ? (
-        <Link href={`/d/${newer}`} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
+        <Link href={`/d/${newer}`} className="text-text-muted transition-colors hover:text-accent">
           {newer} →
         </Link>
       ) : (
-        <span className="text-neutral-300 dark:text-neutral-700">newer →</span>
+        <span className="text-border">newer →</span>
       )}
       {date !== latest && latest && (
-        <Link href="/" className="ml-auto text-neutral-500 underline hover:text-neutral-900 dark:hover:text-neutral-100">
+        <Link href="/" className="ml-auto text-accent underline underline-offset-2 hover:no-underline">
           Latest
         </Link>
       )}

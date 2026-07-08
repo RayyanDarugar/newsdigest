@@ -11,7 +11,7 @@ export function DatePicker({ current }: { current: string }) {
       onChange={(e) => {
         if (e.target.value) router.push(`/d/${e.target.value}`);
       }}
-      className="rounded-md border border-neutral-300 bg-transparent px-2 py-1 text-sm dark:border-neutral-700"
+      className="rounded border border-border bg-transparent px-2 py-1 font-mono text-xs text-text focus:border-accent focus:outline-none"
       aria-label="Jump to date"
     />
   );

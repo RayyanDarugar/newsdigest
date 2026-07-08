@@ -95,6 +95,17 @@ export async function getIndustryItems(
   return (data ?? []) as SourceItem[];
 }
 
+export async function getMarketItems(digestId: string): Promise<SourceItem[]> {
+  const { data, error } = await getServiceClient()
+    .from("source_items")
+    .select("*")
+    .eq("digest_id", digestId)
+    .eq("source_type", "market")
+    .order("position");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as SourceItem[];
+}
+
 export async function getIndustryEntries(
   digestId: string,
   slug: string,
