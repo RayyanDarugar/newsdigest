@@ -34,6 +34,12 @@ export function Masthead({ industries }: { industries: Industry[] }) {
           Industry Digest
         </Link>
         <div className="flex items-center gap-3">
+          <Link
+            href="/settings"
+            className="font-mono text-xs uppercase tracking-wider text-text-muted transition-colors hover:text-text"
+          >
+            Settings
+          </Link>
           <span className="font-mono text-xs uppercase tracking-wider text-text-muted">{today}</span>
           <span className="hidden -rotate-2 rounded border border-dashed border-text-muted px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-text-muted sm:inline-block">
             Today&rsquo;s edition
