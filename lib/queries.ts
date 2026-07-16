@@ -1,6 +1,7 @@
 import { getServiceClient } from "@/lib/db";
 import type {
   Category,
+  DeepDive,
   Digest,
   DigestEntry,
   EntryWithSources,
@@ -118,4 +119,78 @@ export async function getIndustryEntries(
     .order("position");
   if (error) throw new Error(error.message);
   return (data ?? []) as DigestEntry[];
+}
+
+export async function getEntryWithSourcesById(
+  entryId: string,
+): Promise<EntryWithSources | null> {
+  const { data, error } = await getServiceClient()
+    .from("digest_entries")
+    .select("*, entry_sources(source_items(*))")
+    .eq("id", entryId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  const { entry_sources, ...entry } = data as unknown as EntryRow;
+  return {
+    ...entry,
+    sources: (entry_sources ?? [])
+      .map((es) => es.source_items)
+      .filter((s): s is SourceItem => s !== null)
+      .sort((a, b) => a.position - b.position),
+  };
+}
+
+export async function getDigestById(digestId: string): Promise<Digest | null> {
+  const { data, error } = await getServiceClient()
+    .from("digests")
+    .select("id, digest_date, created_at")
+    .eq("id", digestId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data as Digest | null;
+}
+
+export async function getDeepDive(entryId: string): Promise<DeepDive | null> {
+  const { data, error } = await getServiceClient()
+    .from("entry_deep_dives")
+    .select("*")
+    .eq("entry_id", entryId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data as DeepDive | null;
+}
+
+export async function upsertDeepDive(
+  row: Omit<DeepDive, "created_at">,
+): Promise<void> {
+  const { error } = await getServiceClient()
+    .from("entry_deep_dives")
+    .upsert(row);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteDeepDive(entryId: string): Promise<void> {
+  const { error } = await getServiceClient()
+    .from("entry_deep_dives")
+    .delete()
+    .eq("entry_id", entryId);
+  if (error) throw new Error(error.message);
+}
+
+export async function getProfileBio(): Promise<string> {
+  const { data, error } = await getServiceClient()
+    .from("app_profile")
+    .select("bio")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data?.bio as string) ?? "";
+}
+
+export async function saveProfileBio(bio: string): Promise<void> {
+  const { error } = await getServiceClient()
+    .from("app_profile")
+    .upsert({ id: 1, bio, updated_at: new Date().toISOString() });
+  if (error) throw new Error(error.message);
 }
