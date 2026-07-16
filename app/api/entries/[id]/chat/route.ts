@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { hasValidSession } from "@/lib/api-auth";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/lib/anthropic";
 
 const MAX_HISTORY = 20;
+const MAX_CONTINUATIONS = 3;
 
 const chatBodySchema = z.object({
   messages: z
@@ -88,17 +90,28 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const msgStream = client.messages.stream({
-          model: DIGEST_MODEL,
-          max_tokens: 2000,
-          system,
-          tools: [WEB_SEARCH_TOOL],
-          messages: history,
-        });
-        msgStream.on("text", (delta) => {
-          controller.enqueue(encoder.encode(delta));
-        });
-        await msgStream.finalMessage();
+        const messages: Anthropic.MessageParam[] = history;
+
+        for (let i = 0; i <= MAX_CONTINUATIONS; i++) {
+          const msgStream = client.messages.stream({
+            model: DIGEST_MODEL,
+            max_tokens: 2000,
+            system,
+            tools: [WEB_SEARCH_TOOL],
+            messages,
+          });
+          msgStream.on("text", (delta) => {
+            controller.enqueue(encoder.encode(delta));
+          });
+          const final = await msgStream.finalMessage();
+          // Server-side web search hit its iteration limit; resume.
+          if (final.stop_reason === "pause_turn" && i < MAX_CONTINUATIONS) {
+            messages.push({ role: "assistant", content: final.content });
+            continue;
+          }
+          break;
+        }
+
         controller.close();
       } catch (e) {
         controller.error(e);

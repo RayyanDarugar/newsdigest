@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Markdown } from "@/components/markdown";
+import { ANGLES_DELIMITER } from "@/lib/deepdive/prompt";
 
 export function DeepDiveSection({ entryId }: { entryId: string }) {
   const router = useRouter();
@@ -43,6 +44,9 @@ export function DeepDiveSection({ entryId }: { entryId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const anglesIdx = text.indexOf(ANGLES_DELIMITER);
+  const visible = anglesIdx === -1 ? text : text.slice(0, anglesIdx);
+
   if (status === "error") {
     return (
       <div className="rounded border border-border bg-surface p-5">
@@ -65,8 +69,8 @@ export function DeepDiveSection({ entryId }: { entryId: string }) {
         <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-accent" />
         Generating deep dive — searching the web and writing…
       </p>
-      {text ? (
-        <Markdown>{text}</Markdown>
+      {visible ? (
+        <Markdown>{visible}</Markdown>
       ) : (
         <p className="text-sm text-text-muted">Warming up…</p>
       )}

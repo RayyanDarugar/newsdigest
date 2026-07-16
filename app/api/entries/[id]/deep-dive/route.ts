@@ -93,6 +93,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         }
 
         const { summary, angles } = parseDeepDive(fullText);
+        if (!summary.trim()) {
+          throw new Error("generation produced no summary text");
+        }
         await upsertDeepDive({
           entry_id: id,
           summary,
