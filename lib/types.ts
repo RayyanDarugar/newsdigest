@@ -40,3 +40,20 @@ export type DigestEntry = {
 };
 
 export type EntryWithSources = DigestEntry & { sources: SourceItem[] };
+
+export type Angle = {
+  title: string;
+  rationale: string;
+  first_move: string;
+};
+
+export type DeepDiveSource = { title: string; url: string };
+
+export type DeepDive = {
+  entry_id: string;
+  summary: string;
+  angles: Angle[];
+  sources_used: DeepDiveSource[];
+  model: string;
+  created_at: string;
+};
