@@ -62,6 +62,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
           { role: "user", content: user },
         ];
 
+        let lastStopReason: Anthropic.Message["stop_reason"] = null;
         for (let i = 0; i <= MAX_CONTINUATIONS; i++) {
           const msgStream = client.messages.stream({
             model: DIGEST_MODEL,
@@ -76,12 +77,19 @@ export async function POST(req: NextRequest, ctx: Ctx) {
           });
           const final = await msgStream.finalMessage();
           allContent.push(...final.content);
+          lastStopReason = final.stop_reason;
           // Server-side web search hit its iteration limit; resume.
           if (final.stop_reason === "pause_turn" && i < MAX_CONTINUATIONS) {
             messages.push({ role: "assistant", content: final.content });
             continue;
           }
           break;
+        }
+
+        if (lastStopReason === "pause_turn") {
+          throw new Error(
+            "generation did not complete after maximum continuations",
+          );
         }
 
         const { summary, angles } = parseDeepDive(fullText);
