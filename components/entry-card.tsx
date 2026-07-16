@@ -31,7 +31,12 @@ export function EntryCard({
           className="pointer-events-none absolute -right-3 -top-5 h-44 w-44 text-accent opacity-[0.07]"
         />
         <h1 className="drop-cap relative max-w-[34ch] font-body text-2xl font-semibold leading-tight sm:text-3xl">
-          {entry.title}
+          <Link
+            href={`/entry/${entry.id}`}
+            className="transition-colors hover:text-accent"
+          >
+            {entry.title}
+          </Link>
         </h1>
         <p className="relative mt-3 max-w-[58ch] font-body text-base leading-relaxed text-text">
           {entry.body}
@@ -76,7 +81,12 @@ export function EntryCard({
         </Link>
       )}
       <h3 className={`font-body font-semibold leading-snug ${feature ? "text-xl" : "text-base"}`}>
-        {entry.title}
+        <Link
+          href={`/entry/${entry.id}`}
+          className="transition-colors hover:text-accent"
+        >
+          {entry.title}
+        </Link>
       </h3>
       <p className={`mt-2 leading-relaxed text-text-muted ${feature ? "text-[15px]" : "text-sm"}`}>
         {entry.body}
