@@ -18,9 +18,11 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except: login page, ingest API (bearer-authed), Next static
-    // assets, and public files. Segment-anchored (?:/|$) so a future route
-    // like /loginhelp or /api/ingestion can't slip through via prefix match.
-    "/((?!login(?:/|$)|api/ingest(?:/|$)|_next/static|_next/image|favicon.ico|robots\\.txt$).*)",
+    // Everything except: login page, ingest API (bearer-authed), cron
+    // pipeline API (bearer-authed, hit by an external poller with no
+    // session cookie), Next static assets, and public files. Segment-
+    // anchored (?:/|$) so a future route like /loginhelp or /api/ingestion
+    // can't slip through via prefix match.
+    "/((?!login(?:/|$)|api/ingest(?:/|$)|api/cron(?:/|$)|_next/static|_next/image|favicon.ico|robots\\.txt$).*)",
   ],
 };
