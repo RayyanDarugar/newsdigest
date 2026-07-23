@@ -11,6 +11,11 @@ import { runIngest } from "@/lib/ingest/run";
 import { INDUSTRIES, NEWS_FEEDS, MARKET_TICKERS } from "@/lib/digest/config";
 import { todayISO } from "@/lib/dates";
 
+// Default Vercel function timeout is 10s, which the full pipeline (news +
+// market fetch, Claude synthesis, Supabase write) can exceed. 60 is the max
+// on Hobby.
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   if (!hasValidCronSecret(req) && !(await hasValidSession(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
