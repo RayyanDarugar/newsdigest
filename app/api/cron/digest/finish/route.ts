@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hasValidCronSecret } from "@/lib/cron-auth";
+import { hasValidSession } from "@/lib/api-auth";
 import { getDigestByDate } from "@/lib/queries";
 import { buildRedditStartUrls, checkRedditRun, shapeRedditItems } from "@/lib/digest/reddit";
 import { fetchNewsItems } from "@/lib/digest/news";
@@ -11,7 +12,7 @@ import { INDUSTRIES, NEWS_FEEDS, MARKET_TICKERS } from "@/lib/digest/config";
 import { todayISO } from "@/lib/dates";
 
 export async function POST(req: NextRequest) {
-  if (!hasValidCronSecret(req)) {
+  if (!hasValidCronSecret(req) && !(await hasValidSession(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

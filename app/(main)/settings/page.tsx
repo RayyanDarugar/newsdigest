@@ -1,4 +1,5 @@
 import { getProfileBio } from "@/lib/queries";
+import { DigestTrigger } from "@/components/digest-trigger";
 import { saveBio } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +56,11 @@ export default async function SettingsPage({
         Existing deep dives keep their old angles — use the Regenerate button
         on an entry to re-run it with your updated profile.
       </p>
+
+      <h2 className="mb-2 mt-10 font-display text-xl font-extrabold uppercase tracking-tight">
+        Digest pipeline
+      </h2>
+      <DigestTrigger />
     </main>
   );
 }

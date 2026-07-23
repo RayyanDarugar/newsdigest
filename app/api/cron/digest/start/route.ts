@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hasValidCronSecret } from "@/lib/cron-auth";
+import { hasValidSession } from "@/lib/api-auth";
 import { buildRedditStartUrls, startRedditScrape } from "@/lib/digest/reddit";
 import { INDUSTRIES } from "@/lib/digest/config";
 
 export async function POST(req: NextRequest) {
-  if (!hasValidCronSecret(req)) {
+  if (!hasValidCronSecret(req) && !(await hasValidSession(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
