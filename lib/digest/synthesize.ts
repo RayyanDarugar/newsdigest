@@ -7,11 +7,9 @@ import type { IngestItem, IngestEntry } from "@/lib/ingest/schema";
 
 // Structured outputs (client.messages.parse + output_config.format) makes the
 // API itself guarantee schema-valid JSON, instead of relying on free-text
-// prompting + best-effort parsing — this replaced a prior approach that
-// occasionally produced malformed JSON from the raw model text (unescaped
-// characters mid-string) and crashed the /finish route with an unhandled
-// exception. parseEntriesResponse below is kept only as the fallback text
-// parser and is no longer on the production path.
+// prompting + best-effort parsing. parseEntriesResponse below is kept only
+// as a reference/fallback text parser and is no longer on the production
+// path.
 const industrySlugs = INDUSTRIES.map((i) => i.slug) as [string, ...string[]];
 
 const entriesOutputSchema = z.object({
@@ -68,7 +66,15 @@ export async function synthesizeEntries({
   const client = getAnthropicClient();
   const response = await client.messages.parse({
     model: DIGEST_MODEL,
-    max_tokens: 4096,
+    max_tokens: 8192,
+    // claude-sonnet-5 runs adaptive thinking by default even when `thinking`
+    // is omitted — those invisible thinking tokens were eating most of a
+    // 4096 max_tokens budget before any JSON got written, so the response
+    // either truncated mid-string or completed with only 1-2 entries. This
+    // task is deterministic categorization/summarization, not something
+    // that benefits from extended thinking, so disable it outright rather
+    // than just raising max_tokens further.
+    thinking: { type: "disabled" },
     system,
     messages: [{ role: "user", content: user }],
     output_config: { format: zodOutputFormat(entriesOutputSchema) },
