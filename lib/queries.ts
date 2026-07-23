@@ -28,6 +28,12 @@ export async function getDigestByDate(date: string): Promise<Digest | null> {
   return data as Digest | null;
 }
 
+// Cascade deletes on digests take items/entries/entry_sources with it.
+export async function deleteDigestByDate(date: string): Promise<void> {
+  const { error } = await getServiceClient().from("digests").delete().eq("digest_date", date);
+  if (error) throw new Error(error.message);
+}
+
 export async function getCategories(): Promise<Category[]> {
   const { data, error } = await getServiceClient()
     .from("categories")

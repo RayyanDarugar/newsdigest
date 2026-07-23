@@ -13,6 +13,8 @@ type Status =
   | { phase: "done"; items: number; entries: number }
   | { phase: "already_done" }
   | { phase: "timed_out" }
+  | { phase: "deleting" }
+  | { phase: "deleted" }
   | { phase: "error"; message: string };
 
 export function DigestTrigger() {
@@ -70,7 +72,24 @@ export function DigestTrigger() {
     }
   }
 
-  const busy = status.phase === "starting" || status.phase === "polling";
+  async function deleteToday() {
+    if (!window.confirm("Delete today's digest? This can't be undone.")) return;
+    setStatus({ phase: "deleting" });
+    try {
+      const res = await fetch("/api/digest/today", { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setStatus({ phase: "error", message: body.error ?? `HTTP ${res.status}` });
+        return;
+      }
+      setStatus({ phase: "deleted" });
+      router.refresh();
+    } catch {
+      setStatus({ phase: "error", message: "network error while deleting" });
+    }
+  }
+
+  const busy = status.phase === "starting" || status.phase === "polling" || status.phase === "deleting";
 
   return (
     <div className="max-w-2xl rounded border border-border bg-surface px-4 py-3.5">
@@ -82,13 +101,21 @@ export function DigestTrigger() {
         >
           {busy ? "Running…" : "Run digest now"}
         </button>
+        <button
+          onClick={deleteToday}
+          disabled={busy}
+          className="rounded border border-border px-3 py-2 font-mono text-xs uppercase tracking-wide text-text-muted transition-colors hover:border-down hover:text-down disabled:opacity-50"
+        >
+          Delete today&rsquo;s digest
+        </button>
         <StatusLine status={status} />
       </div>
       <p className="mt-2.5 text-xs text-text-muted">
         Kicks off today&rsquo;s scrape (reddit via Apify, news, market) and
         waits for it to finish — usually a few minutes. Safe to leave this
         page; re-running later just checks status if a digest already exists
-        for today.
+        for today. Use delete to clear today&rsquo;s digest and re-run from
+        scratch.
       </p>
     </div>
   );
@@ -124,6 +151,10 @@ function StatusLine({ status }: { status: Status }) {
           Still not ready after ~15 minutes — check the Apify run, then press the button again.
         </span>
       );
+    case "deleting":
+      return <span className="font-mono text-xs text-text-muted">Deleting…</span>;
+    case "deleted":
+      return <span className="font-mono text-xs text-text-muted">Deleted — ready to run again.</span>;
     case "error":
       return <span className="font-mono text-xs text-down">Error: {status.message}</span>;
   }
