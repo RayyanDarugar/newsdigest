@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isValidDigestDate } from "@/lib/dates";
+import { isValidDigestDate, todayISO } from "@/lib/dates";
 
 describe("isValidDigestDate", () => {
   it("accepts a valid date", () => {
@@ -29,5 +29,11 @@ describe("isValidDigestDate", () => {
   it("rejects garbage input", () => {
     expect(isValidDigestDate("not-a-date")).toBe(false);
     expect(isValidDigestDate("")).toBe(false);
+  });
+});
+
+describe("todayISO", () => {
+  it("returns a valid YYYY-MM-DD digest date", () => {
+    expect(isValidDigestDate(todayISO())).toBe(true);
   });
 });

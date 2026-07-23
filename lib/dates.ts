@@ -11,3 +11,7 @@ export function isValidDigestDate(value: string): boolean {
   if (Number.isNaN(date.getTime())) return false;
   return date.toISOString().slice(0, 10) === value;
 }
+
+export function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
