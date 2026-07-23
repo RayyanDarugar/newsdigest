@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: "already_done" });
   }
 
-  const run = await checkRedditRun();
+  const run = await checkRedditRun(date);
   if (!run.ready) {
     return NextResponse.json({ status: "pending" });
   }

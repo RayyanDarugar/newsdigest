@@ -113,20 +113,37 @@ describe("startRedditScrape / checkRedditRun", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404, text: async () => "" });
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    expect(await checkRedditRun()).toEqual({ ready: false });
+    expect(await checkRedditRun("2026-07-22")).toEqual({ ready: false });
   });
 
   it("checkRedditRun fetches the dataset once a SUCCEEDED run is found", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, text: async () => "" })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { startedAt: "2026-07-22T06:03:00.000Z", defaultDatasetId: "ds-abc123" } }),
+      })
       .mockResolvedValueOnce({ ok: true, json: async () => [{ title: "a post" }] });
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const result = await checkRedditRun();
+    const result = await checkRedditRun("2026-07-22");
     expect(result).toEqual({ ready: true, posts: [{ title: "a post" }] });
     expect(fetchMock.mock.calls[1][0]).toBe(
-      "https://api.apify.com/v2/acts/trudax~reddit-scraper-lite/runs/last/dataset/items?limit=150&token=test-token",
+      "https://api.apify.com/v2/datasets/ds-abc123/items?limit=150&token=test-token",
     );
+  });
+
+  it("checkRedditRun returns not-ready when the last SUCCEEDED run started on a different day than the target date", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { startedAt: "2026-07-21T23:59:00.000Z", defaultDatasetId: "ds-abc123" } }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const result = await checkRedditRun("2026-07-22");
+    expect(result).toEqual({ ready: false });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

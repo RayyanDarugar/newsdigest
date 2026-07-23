@@ -47,6 +47,14 @@ Reddit/news caps, subreddit list, news feeds, and market tickers all live in
 `lib/digest/config.ts`. The synthesis prompt (category rules, industry
 whitelist) lives in `lib/digest/prompt.ts`.
 
+## Notes
+
+`todayISO()` (used for the digest date) is UTC-based, so if the external
+poller fires close to midnight in a timezone behind UTC, "today" may already
+read as tomorrow in UTC. This is internally consistent — both the
+idempotency check (`getDigestByDate`) and the written digest date use the
+same value — but worth knowing when debugging date labeling.
+
 ## Manual ingest still works
 
 `/api/ingest` (see `docs/ingest-contract.md`) is unchanged and still used by

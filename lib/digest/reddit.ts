@@ -40,7 +40,7 @@ export async function startRedditScrape(startUrls: { url: string }[]): Promise<v
 
 export type RedditRunCheck = { ready: false } | { ready: true; posts: Record<string, unknown>[] };
 
-export async function checkRedditRun(): Promise<RedditRunCheck> {
+export async function checkRedditRun(date: string): Promise<RedditRunCheck> {
   const statusRes = await fetch(
     `${APIFY_BASE}/acts/${ACTOR_ID}/runs/last?status=SUCCEEDED&token=${apifyToken()}`,
   );
@@ -48,9 +48,14 @@ export async function checkRedditRun(): Promise<RedditRunCheck> {
   if (!statusRes.ok) {
     throw new Error(`Apify run status check failed: ${statusRes.status} ${await statusRes.text()}`);
   }
+  const statusBody = (await statusRes.json()) as {
+    data: { startedAt: string; defaultDatasetId: string };
+  };
+  const startedDate = statusBody.data.startedAt.slice(0, 10);
+  if (startedDate !== date) return { ready: false };
 
   const datasetRes = await fetch(
-    `${APIFY_BASE}/acts/${ACTOR_ID}/runs/last/dataset/items?limit=150&token=${apifyToken()}`,
+    `${APIFY_BASE}/datasets/${statusBody.data.defaultDatasetId}/items?limit=150&token=${apifyToken()}`,
   );
   if (!datasetRes.ok) {
     throw new Error(`Apify dataset fetch failed: ${datasetRes.status} ${await datasetRes.text()}`);
@@ -103,7 +108,8 @@ export function shapeRedditItems(
         },
         position: position++,
       });
-    } catch {
+    } catch (e) {
+      console.warn("shapeRedditItems: skipping malformed post", post.id, e);
       continue;
     }
   }
