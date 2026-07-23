@@ -1,9 +1,12 @@
 # NewsDigest
 
-A personal industry digest. An n8n pipeline scrapes news/reddit/market data
-once a day and POSTs it to `/api/ingest`; the app itself is read-only — it
-just renders whatever the pipeline last wrote to Supabase (a home feed of six
-curated categories, plus a per-industry drill-down of everything scraped).
+A personal industry digest. The app itself fetches news/reddit/market data
+once a day (`app/api/cron/digest/`, driven by an external scheduler — see
+`docs/cron-pipeline.md`), has Claude synthesize it into a six-category home
+feed, and stores it in Supabase alongside a per-industry drill-down of
+everything scraped. (An earlier version of this pipeline ran in n8n —
+`n8n/industry-digest-workflow.json` is kept for reference but is no longer
+required.)
 
 ## Setup
 
@@ -31,6 +34,8 @@ under today's date instead of the sample payload's own date.
 
 ## Further reading
 
+- `docs/cron-pipeline.md` — the two-phase cron pipeline that replaced the n8n
+  workflow: what each route does, the polling schedule, required env vars.
 - `docs/ingest-contract.md` — the payload shape n8n must send, validation
   rules, and response codes.
 - `docs/superpowers/specs/` and `docs/superpowers/plans/` — the original
