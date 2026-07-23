@@ -40,19 +40,28 @@ export async function startRedditScrape(startUrls: { url: string }[]): Promise<v
 
 export type RedditRunCheck = { ready: false } | { ready: true; posts: Record<string, unknown>[] };
 
-export async function checkRedditRun(date: string): Promise<RedditRunCheck> {
-  const statusRes = await fetch(
-    `${APIFY_BASE}/acts/${ACTOR_ID}/runs/last?status=SUCCEEDED&token=${apifyToken()}`,
-  );
+const FAILED_RUN_STATUSES = new Set(["FAILED", "ABORTED", "TIMED-OUT"]);
+
+// `runs/last` with NO status filter always means "the run most recently
+// started" — i.e. exactly the run /start just kicked off, whatever its
+// current status. Filtering by status=SUCCEEDED (an earlier version of this
+// function) instead finds the last run that *succeeded*, which on any day
+// with more than one run (e.g. repeated manual testing) can be an older,
+// already-finished run — masking the new run that's still in progress.
+export async function checkRedditRun(): Promise<RedditRunCheck> {
+  const statusRes = await fetch(`${APIFY_BASE}/acts/${ACTOR_ID}/runs/last?token=${apifyToken()}`);
   if (statusRes.status === 404) return { ready: false };
   if (!statusRes.ok) {
     throw new Error(`Apify run status check failed: ${statusRes.status} ${await statusRes.text()}`);
   }
   const statusBody = (await statusRes.json()) as {
-    data: { startedAt: string; defaultDatasetId: string };
+    data: { status: string; defaultDatasetId: string };
   };
-  const startedDate = statusBody.data.startedAt.slice(0, 10);
-  if (startedDate !== date) return { ready: false };
+
+  if (FAILED_RUN_STATUSES.has(statusBody.data.status)) {
+    throw new Error(`Apify reddit scrape ended with status ${statusBody.data.status}`);
+  }
+  if (statusBody.data.status !== "SUCCEEDED") return { ready: false };
 
   const datasetRes = await fetch(
     `${APIFY_BASE}/datasets/${statusBody.data.defaultDatasetId}/items?limit=150&token=${apifyToken()}`,

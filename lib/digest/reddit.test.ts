@@ -109,41 +109,60 @@ describe("startRedditScrape / checkRedditRun", () => {
     });
   });
 
-  it("checkRedditRun returns not-ready when no SUCCEEDED run exists yet", async () => {
+  it("checkRedditRun returns not-ready when no run exists yet", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404, text: async () => "" });
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    expect(await checkRedditRun("2026-07-22")).toEqual({ ready: false });
+    expect(await checkRedditRun()).toEqual({ ready: false });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://api.apify.com/v2/acts/trudax~reddit-scraper-lite/runs/last?token=test-token",
+    );
   });
 
-  it("checkRedditRun fetches the dataset once a SUCCEEDED run is found", async () => {
+  it("checkRedditRun fetches the dataset once the last run has SUCCEEDED", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ data: { startedAt: "2026-07-22T06:03:00.000Z", defaultDatasetId: "ds-abc123" } }),
+        json: async () => ({ data: { status: "SUCCEEDED", defaultDatasetId: "ds-abc123" } }),
       })
       .mockResolvedValueOnce({ ok: true, json: async () => [{ title: "a post" }] });
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const result = await checkRedditRun("2026-07-22");
+    const result = await checkRedditRun();
     expect(result).toEqual({ ready: true, posts: [{ title: "a post" }] });
     expect(fetchMock.mock.calls[1][0]).toBe(
       "https://api.apify.com/v2/datasets/ds-abc123/items?limit=150&token=test-token",
     );
   });
 
-  it("checkRedditRun returns not-ready when the last SUCCEEDED run started on a different day than the target date", async () => {
+  it("checkRedditRun returns not-ready when the last run is still RUNNING — even if an older run already succeeded", async () => {
+    // This is the exact bug this test guards against: the last-started run
+    // (the one /start just kicked off) is still RUNNING, but an earlier run
+    // from the same day already SUCCEEDED. Only one fetch should happen —
+    // there must be no separate "find the last SUCCEEDED run" lookup that
+    // could find that older run instead.
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ data: { startedAt: "2026-07-21T23:59:00.000Z", defaultDatasetId: "ds-abc123" } }),
+      json: async () => ({ data: { status: "RUNNING", defaultDatasetId: "ds-old-succeeded-run" } }),
     });
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const result = await checkRedditRun("2026-07-22");
+    const result = await checkRedditRun();
     expect(result).toEqual({ ready: false });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("checkRedditRun throws when the last run failed outright", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { status: "FAILED", defaultDatasetId: "ds-abc123" } }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(checkRedditRun()).rejects.toThrow(/status FAILED/);
   });
 });
